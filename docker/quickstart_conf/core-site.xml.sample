@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<configuration>
+  <property>
+    <name>fs.s3a.access.key</name>
+    <value>place-aws-access-key-here</value>
+  </property>
+  <property>
+    <name>fs.s3a.secret.key</name>
+    <value>place-aws-secret-key-here</value>
+  </property>
+  <property>
+    <name>fs.azure.account.key</name>
+    <value>place-azure-storage-account-key-here</value>
+  </property>
+</configuration>

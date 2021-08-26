@@ -25,7 +25,8 @@
 version: "3"
 services:
   hms:
-    image: ${IMPALA_QUICKSTART_IMAGE_PREFIX:-}impala_quickstart_hms
+    # image: ${IMPALA_QUICKSTART_IMAGE_PREFIX:-}impala_quickstart_hms
+    image: c3ai/c3-impala-hms
     # Give the HMS an explicit hostname to avoid issues with docker-compose-generated
     # hostnames including underscore, which is rejected by Java's URL parser.
     container_name: quickstart-hive-metastore
