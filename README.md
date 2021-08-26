@@ -1,13 +1,13 @@
 # Welcome to C3's fork of Impala
 
-. Git clone the project.
-. Switch to c3 branch.
-. Source c3-init file.
-. Copy docker/quickstart_conf/core-site.xml.sample to docker/quickstart_conf/core-site.xml.
-. Change the AWS and/or Azure access keys in docker/quickstart_conf/core-site.xml.
-. Run c3-start-server.sh.
-. Run c3-impala-shell.sh.
-. Try 'show databases;'.
+1. Git clone the project.
+1. Switch to c3 branch.
+1. Source c3-init file.
+1. Copy docker/quickstart_conf/core-site.xml.sample to docker/quickstart_conf/core-site.xml.
+1. Change the AWS and/or Azure access keys in docker/quickstart_conf/core-site.xml.
+1. Run c3-start-server.sh.
+1. Run c3-impala-shell.sh.
+1. Try 'show databases;'.
 
 # Welcome to Impala
 
