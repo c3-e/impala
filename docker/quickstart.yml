@@ -24,6 +24,21 @@
 # See README.md in this directory for usage instructions.
 version: "3"
 services:
+  openldap:
+    image: bitnami/openldap:2
+    ports:
+      - '1389:1389'
+      - '1636:1636'
+    environment:
+      - LDAP_ROOT=dc=c3,dc=ai
+      - LDAP_ADMIN_USERNAME=admin
+      - LDAP_ADMIN_PASSWORD=c3admin
+      - LDAP_USERS=impala
+      - LDAP_PASSWORDS=c3impala
+    networks:
+      - quickstart-network
+    volumes:
+      - 'openldap_data:/bitnami/openldap'
   hms:
     # image: ${IMPALA_QUICKSTART_IMAGE_PREFIX:-}impala_quickstart_hms
     image: c3ai/c3-impala-hms
@@ -81,12 +96,20 @@ services:
       - "${QUICKSTART_LISTEN_ADDR:?Please set QUICKSTART_LISTEN_ADDR environment variable}:25000:25000"
       # HS2 over HTTP endpoint.
       - "${QUICKSTART_LISTEN_ADDR:?Please set QUICKSTART_LISTEN_ADDR environment variable}:28000:28000"
-    command: [ "-v=1",
-              "-redirect_stdout_stderr=false", "-logtostderr",
-              "-kudu_master_hosts=kudu-master-1:7051",
-              "-mt_dop_auto_fallback=true",
-              "-default_query_options=mt_dop=4,default_file_format=parquet,default_transactional_type=insert_only",
-              "-mem_limit=4gb"]
+    command: 
+      - -v=1
+      - -redirect_stdout_stderr=false
+      - -logtostderr
+      - -kudu_master_hosts=kudu-master-1:7051
+      - -mt_dop_auto_fallback=true
+      - -default_query_options=mt_dop=4,default_file_format=parquet,default_transactional_type=insert_only
+      - -mem_limit=4gb
+      - --enable_ldap_auth
+      - --ldap_uri=ldap://openldap:1389
+      - --ldap_bind_password_cmd=echo -n adminpassword
+      - --ldap_passwords_in_clear_ok
+      - --ldap_bind_dn=cn=admin,dc=c3,dc=ai
+      - --ldap_bind_pattern=cn=#UID,ou=users,dc=c3,dc=ai
     environment:
       # Keep the Java heap small to preserve memory for query execution.
       - JAVA_TOOL_OPTIONS="-Xmx1g"
@@ -98,8 +121,9 @@ services:
 volumes:
   impala-quickstart-hms:
   impala-quickstart-warehouse:
+  openldap_data:
+    driver: local
 
 networks:
   quickstart-network:
     external: true
-
