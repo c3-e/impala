@@ -4,6 +4,12 @@ fs:
   s3a:
     accessKey: <s3 access key>
     secretKey: <s3 secret key>
+  warehouse:
+    storageClass: azurefile-csi-nfs
+    storageSize: 100Mi
+impalad:
+  image: apache/impala:81d5377c2-impalad_coord_exec
+  javaToolOptions: '"-Xmx1g"'
 impalaShell:
   image: apache/impala:81d5377c2-impala_quickstart_client
 catalogd:

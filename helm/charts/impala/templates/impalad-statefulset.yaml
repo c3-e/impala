@@ -39,8 +39,8 @@ spec:
             - --ldap_bind_pattern=cn=#UID,ou=users,dc=c3,dc=ai
           env:
             - name: JAVA_TOOL_OPTIONS
-              value: '"-Xmx1g"'
-          image: apache/impala:81d5377c2-impalad_coord_exec
+              value: '{{ .Values.impalad.javaToolOptions }}'
+          image: {{ .Values.impalad.image }}
           name: impalad
           ports:
             - containerPort: 21000
