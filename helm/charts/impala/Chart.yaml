@@ -1,0 +1,11 @@
+apiVersion: v2
+kubeVersion: ">= 1.16.0-r0"
+name: impala
+description: Chart for Impala.
+engine: gotpl
+maintainers:
+  - email: Operations@c3.ai
+    name: Operations
+appVersion: 9.6.21.4
+version: 9.6.21+4
+

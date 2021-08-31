@@ -8,6 +8,14 @@
 1. Run c3-impala-shell.sh.
 1. Try 'show databases;'.
 
+## Helm Install
+
+1. Create values.yaml.<suffix>.
+1. Helm install, for example with stageazpassstore01 storage account:
+```
+helm install impala -n impala helm/charts/impala/ -f helm/charts/impala/values.yaml.stageazpaasstore01
+```
+
 # Welcome to Impala
 
 Lightning-fast, distributed [SQL](https://en.wikipedia.org/wiki/SQL) queries for petabytes

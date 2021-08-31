@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.23.0 (bc7d9f4f)
+  labels:
+    io.kompose.service: statestored
+  name: statestored
+spec:
+  ports:
+    - name: "24000"
+      port: 24000
+      targetPort: 24000
+    - name: "25010"
+      port: 25010
+      targetPort: 25010
+  selector:
+    io.kompose.service: statestored

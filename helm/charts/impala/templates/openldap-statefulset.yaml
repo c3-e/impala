@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.23.0 (bc7d9f4f)
+  labels:
+    io.kompose.service: openldap
+  name: openldap
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: openldap
+  serviceName: openldap
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.23.0 (bc7d9f4f)
+      labels:
+        io.kompose.network/quickstart-network: "true"
+        io.kompose.service: openldap
+    spec:
+      containers:
+        - env:
+            - name: LDAP_ADMIN_PASSWORD
+              value: c3admin
+            - name: LDAP_ADMIN_USERNAME
+              value: admin
+            - name: LDAP_PASSWORDS
+              value: c3impala
+            - name: LDAP_ROOT
+              value: dc=c3,dc=ai
+            - name: LDAP_USERS
+              value: impala
+          image: bitnami/openldap:2
+          name: openldap
+          ports:
+            - containerPort: 1389
+            - containerPort: 1636
+          resources: {}
+          volumeMounts:
+            - mountPath: /bitnami/openldap
+              name: openldap-data
+      restartPolicy: Always
+      volumes:
+        - name: openldap-data
+          emptyDir: {}

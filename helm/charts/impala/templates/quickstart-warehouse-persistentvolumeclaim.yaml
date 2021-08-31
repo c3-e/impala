@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    io.kompose.service: impala-quickstart-warehouse
+  name: impala-quickstart-warehouse
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: 'azurefile-csi-nfs'
+  resources:
+    requests:
+      storage: 100Mi

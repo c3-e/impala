@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.23.0 (bc7d9f4f)
+  labels:
+    io.kompose.service: statestored
+  name: statestored
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: statestored
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.23.0 (bc7d9f4f)
+      labels:
+        io.kompose.network/quickstart-network: "true"
+        io.kompose.service: statestored
+    spec:
+      containers:
+        - args:
+            - -redirect_stdout_stderr=false
+            - -logtostderr
+            - -v=1
+          image: {{ .Values.statestored.image }}
+          name: statestored
+          ports:
+            - containerPort: 24000
+            - containerPort: 25010
+          resources: {}
+          volumeMounts:
+            - mountPath: /opt/impala/conf
+              name: config
+              readOnly: true
+      restartPolicy: Always
+      volumes:
+        - name: config
+          configMap:
+            name: quickstart-config
+            items:
+            - key: "core-site.xml"
+              path: "core-site.xml"
+            - key: "hive-site.xml"
+              path: "hive-site.xml"

@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.23.0 (bc7d9f4f)
+  labels:
+    io.kompose.service: quickstart-hive-metastore
+  name: quickstart-hive-metastore
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: quickstart-hive-metastore
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.23.0 (bc7d9f4f)
+      labels:
+        io.kompose.network/quickstart-network: "true"
+        io.kompose.service: quickstart-hive-metastore
+    spec:
+      containers:
+        - args:
+            - hms
+          image: {{ .Values.hms.image }}
+          name: quickstart-hive-metastore
+          resources: {}
+          ports:
+            - containerPort: 9083
+          volumeMounts:
+            - mountPath: /opt/hive/conf
+              name: config
+              readOnly: true
+            - mountPath: /var/lib/hive
+              name: impala-quickstart-warehouse
+            - mountPath: /var/lib/warehouse
+              name: impala-quickstart-warehouse
+      restartPolicy: Always
+      volumes:
+        - name: impala-quickstart-warehouse
+          persistentVolumeClaim:
+            claimName: impala-quickstart-warehouse
+        - name: config
+          configMap:
+            name: quickstart-config
+            items:
+            - key: "core-site.xml"
+              path: "core-site.xml"
+            - key: "hive-site.xml"
+              path: "hive-site.xml"

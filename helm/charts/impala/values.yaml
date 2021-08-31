@@ -1,0 +1,14 @@
+fs:
+  azure:
+    accountKey: <azure account key>
+  s3a:
+    accessKey: <s3 access key>
+    secretKey: <s3 secret key>
+impalaShell:
+  image: apache/impala:81d5377c2-impala_quickstart_client
+catalogd:
+  image: apache/impala:81d5377c2-catalogd
+hms:
+  image: c3ai/c3-impala-hms:1.0
+statestored:
+  image: apache/impala:81d5377c2-statestored

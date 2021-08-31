@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.23.0 (bc7d9f4f)
+  labels:
+    io.kompose.service: catalogd
+  name: catalogd
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      io.kompose.service: catalogd
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      annotations:
+        kompose.cmd: kompose convert
+        kompose.version: 1.23.0 (bc7d9f4f)
+      labels:
+        io.kompose.network/quickstart-network: "true"
+        io.kompose.service: catalogd
+    spec:
+      containers:
+        - args:
+            - -redirect_stdout_stderr=false
+            - -logtostderr
+            - -v=1
+            - -hms_event_polling_interval_s=1
+            - -invalidate_tables_timeout_s=999999
+          image: {{ .Values.catalogd.image }}
+          name: catalogd
+          ports:
+            - containerPort: 25020
+            - containerPort: 26000
+          resources: {}
+          volumeMounts:
+            - mountPath: /user/hive/warehouse
+              name: impala-quickstart-warehouse
+            - mountPath: /opt/impala/conf
+              name: config
+              readOnly: true
+      restartPolicy: Always
+      volumes:
+        - name: impala-quickstart-warehouse
+          persistentVolumeClaim:
+            claimName: impala-quickstart-warehouse
+        - name: config
+          configMap:
+            name: quickstart-config
+            items:
+            - key: "core-site.xml"
+              path: "core-site.xml"
+            - key: "hive-site.xml"
+              path: "hive-site.xml"
