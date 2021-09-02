@@ -19,9 +19,16 @@ spec:
       containers:
         - image: {{ .Values.impalaShell.image }}
           name: impala-shell
+          env:
+            - name: AZURE_STORAGE_CONNECTION_STRING
+              value: '{{ .Values.impalaShell.azureStorageConnectionString }}'
           command: 
           - sleep
           args:
           - infinity
-          resources: {}
+          resources:
+            requests:
+              memory: "4Gi"
+            limits:
+              memory: "16Gi"
       restartPolicy: Always

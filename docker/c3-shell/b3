@@ -1,0 +1,130 @@
+#!/usr/bin/python
+
+# for container
+# !/usr/bin/python
+# for local dev
+# !/usr/local/share/c3/conda/bin/python
+
+import os, uuid, re, sys, traceback, argparse
+from azure.storage.blob import BlobServiceClient, BlobClient, ContainerClient, __version__
+
+def containerAndPath(path, trim = False):
+  container_name = path
+  path = None
+
+  p = re.compile("(.*?)/(.*)")
+  m = p.match(container_name)
+  if m is not None:
+    container_name =  m.group(1)
+    if trim:
+      container_name = container_name.strip('/')
+    path = m.group(2)
+    if trim:
+      path = path.strip('/')
+  
+  return (container_name, path)
+
+def ls(path, args):
+  # args.dirs, args.recurse
+  try:
+    container_name = path
+    path = None
+
+    p = re.compile("(.*?)/(.*)")
+    m = p.match(container_name)
+    if m is not None:
+      container_name =  m.group(1)
+      path = m.group(2)
+
+    container_client = blob_service_client.get_container_client(container_name)
+
+    blob_list = container_client.list_blobs(name_starts_with=path)
+    if args.recurse:
+      for blob in blob_list:
+        print(blob.name)
+        sys.stdout.flush()
+    else:
+      p = re.compile("(.*?)/.*\.csv")
+      if args.dirs:
+        p = re.compile("(.*)/.*\.csv")
+      parts = {}
+      prev = ""
+      for blob in blob_list:
+        # print("\t" + blob.name)
+        m = p.match(blob.name)
+        if m is not None:
+          part = m.group(1)
+          # print(part)
+          if part not in parts:
+            parts[part] = 1
+            if prev != "":
+              print(prev)
+              sys.stdout.flush()
+            prev = part
+          else:
+            parts[part] += 1
+      print(prev)
+      sys.stdout.flush()
+  except KeyboardInterrupt:
+    try:
+      sys.exit(0)
+    except SystemExit:
+      os._exit(0)
+  except Exception as ex:
+    print(ex)
+    traceback.print_exc()
+
+def upload(src, dest, arg):
+  sink = containerAndPath(dest, True)
+
+  if os.path.isdir(src):
+    for root, subdirs, files in os.walk(src):
+      for file in files:
+        src_path = '/'.join([root, file])
+        dest_path = src_path
+        if sink[1] is not None:
+          dest_path = '/'.join([sink[1], src_path.strip('/')])
+        blob_client = blob_service_client.get_blob_client(container=sink[0], blob=dest_path)
+        with open(src_path, "rb") as data:
+          print("Uploading " + src_path + " to " + dest_path + " at " + sink[0])
+          blob_client.upload_blob(data)
+  else:
+    src_path = src
+    dest_path = src_path
+    if sink[1] is not None:
+      dest_path = '/'.join([sink[1], src_path.strip('/')])
+    blob_client = blob_service_client.get_blob_client(container=sink[0], blob=dest_path)
+    with open(src_path, "rb") as data:
+      print("Uploading " + src_path + " to " + dest_path + " at " + sink[0])
+      blob_client.upload_blob(data)
+
+parser = argparse.ArgumentParser(prog='bs', epilog="Azure Blob Storage v" + __version__ + " - Python c3telemetry sample")
+subparsers = parser.add_subparsers(dest="command")
+ls_parser = subparsers.add_parser('ls', help='list files')
+ls_parser.add_argument('path', metavar='<container-name>/<file-name>', help='prefix to the blob name')
+ls_parser.add_argument('-d', '--dirs', dest='dirs', action='store_true', help='directories only')
+ls_parser.add_argument('-r', '--recursive', dest='recurse', action='store_true', help='all files recursively')
+
+upload_parser = subparsers.add_parser('upload', help='upload files')
+upload_parser.add_argument('src', help='src folder or file')
+upload_parser.add_argument('dest', metavar='<container-name>/<file-name>', help='dest folder or file')
+
+download_parser = subparsers.add_parser('download', help='upload files')
+download_parser.add_argument('src', metavar='<container-name>/<file-name>', help='src folder or file')
+download_parser.add_argument('dest', help='dest folder or file')
+
+args = parser.parse_args()
+connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
+if connect_str is None:
+  print("Environment variable: AZURE_STORAGE_CONNECTION_STRING is not set.")
+  exit(1)
+blob_service_client = BlobServiceClient.from_connection_string(connect_str)
+
+if args.command == 'ls':
+  ls(args.path, args)
+elif args.command == 'upload':
+  upload(args.src, args.dest, args)
+elif args.command == 'download':
+  download(args.src, args.dest, args)
+else:
+  parser.print_help()
