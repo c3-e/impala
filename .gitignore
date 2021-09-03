@@ -114,3 +114,4 @@ perf_results/
 # c3
 docker/quickstart_conf/core-site.xml
 helm/charts/impala/values.yaml.*
+docker/c3-shell/data

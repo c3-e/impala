@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/local/share/c3/conda/bin/python
 
 # for container
 # !/usr/bin/python
@@ -12,7 +12,7 @@ def containerAndPath(path, trim = False):
   container_name = path
   path = None
 
-  p = re.compile("(.*?)/(.*)")
+  p = re.compile("(.*?):(.*)")
   m = p.match(container_name)
   if m is not None:
     container_name =  m.group(1)
@@ -27,44 +27,73 @@ def containerAndPath(path, trim = False):
 def ls(path, args):
   # args.dirs, args.recurse
   try:
-    container_name = path
-    path = None
-
-    p = re.compile("(.*?)/(.*)")
-    m = p.match(container_name)
-    if m is not None:
-      container_name =  m.group(1)
-      path = m.group(2)
+    src = containerAndPath(path, True)
+    container_name = src[0]
+    src_path = src[1]
 
     container_client = blob_service_client.get_container_client(container_name)
 
-    blob_list = container_client.list_blobs(name_starts_with=path)
+    blob_list = container_client.list_blobs(name_starts_with=src_path)
     if args.recurse:
       for blob in blob_list:
-        print(blob.name)
+        print(container_name + ":" + blob.name)
         sys.stdout.flush()
     else:
-      p = re.compile("(.*?)/.*\.csv")
+      p = re.compile("(.*?)/.*")
       if args.dirs:
-        p = re.compile("(.*)/.*\.csv")
+        p = re.compile("(.*)/.*")
+
       parts = {}
       prev = ""
       for blob in blob_list:
-        # print("\t" + blob.name)
         m = p.match(blob.name)
         if m is not None:
           part = m.group(1)
-          # print(part)
           if part not in parts:
             parts[part] = 1
             if prev != "":
-              print(prev)
+              print(container_name + ":" + prev)
               sys.stdout.flush()
             prev = part
           else:
             parts[part] += 1
-      print(prev)
+        elif not args.dirs: # file in the parent directory
+          print(container_name + ":" + blob.name)
+          sys.stdout.flush()
+      print(container_name + ":" + prev)
       sys.stdout.flush()
+  except KeyboardInterrupt:
+    try:
+      sys.exit(0)
+    except SystemExit:
+      os._exit(0)
+  except Exception as ex:
+    print(ex)
+    traceback.print_exc()
+
+def rm(path, args):
+  try:
+    src = containerAndPath(path, True)
+    container_name = src[0]
+    src_path = src[1]
+
+    container_client = blob_service_client.get_container_client(container_name)
+    is_dir = True
+    if src_path is not None:
+      blob_client = blob_service_client.get_blob_client(container=container_name, blob=src_path)
+      if blob_client.exists():
+        is_dir = False
+
+    if not is_dir:
+      print("Deleting " + container_name + ":" + src_path)
+      blob_client.delete_blob()
+    else:
+      blob_list = container_client.list_blobs(name_starts_with=src_path)
+      for blob in blob_list:
+        print("Deleting " + container_name + ":" + blob.name)
+        blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob.name)
+        blob_client.delete_blob()
+
   except KeyboardInterrupt:
     try:
       sys.exit(0)
@@ -76,27 +105,66 @@ def ls(path, args):
 
 def upload(src, dest, arg):
   sink = containerAndPath(dest, True)
+  container_name = sink[0]
+  dest_path = sink[1]
 
   if os.path.isdir(src):
+    src_prefix = os.path.dirname(src) + "/"
     for root, subdirs, files in os.walk(src):
       for file in files:
         src_path = '/'.join([root, file])
-        dest_path = src_path
-        if sink[1] is not None:
-          dest_path = '/'.join([sink[1], src_path.strip('/')])
-        blob_client = blob_service_client.get_blob_client(container=sink[0], blob=dest_path)
+
+        dest = dest_path.rstrip('/') + '/' + src_path.replace(src_prefix, "", 1)
+        print("Uploading " + src_path + " to " + container_name + ":" + os.path.dirname(dest) + "/")
+
+        blob_client = blob_service_client.get_blob_client(container=sink[0], blob=dest)
         with open(src_path, "rb") as data:
-          print("Uploading " + src_path + " to " + dest_path + " at " + sink[0])
-          blob_client.upload_blob(data)
+          blob_client.upload_blob(data, overwrite=arg.force)
   else:
-    src_path = src
-    dest_path = src_path
-    if sink[1] is not None:
-      dest_path = '/'.join([sink[1], src_path.strip('/')])
-    blob_client = blob_service_client.get_blob_client(container=sink[0], blob=dest_path)
-    with open(src_path, "rb") as data:
-      print("Uploading " + src_path + " to " + dest_path + " at " + sink[0])
-      blob_client.upload_blob(data)
+    dest = os.path.basename(src)
+    if dest_path is not None and dest_path != "":
+      dest = dest_path + "/" + dest
+
+    print("Uploading " + src + " to " + container_name + ":" + dest)
+    blob_client = blob_service_client.get_blob_client(container=sink[0], blob=dest)
+    with open(src, "rb") as data:
+      blob_client.upload_blob(data, overwrite=arg.force)
+
+def download(src, dest, arg):
+  origin = containerAndPath(src, True)
+  container_name = origin[0]
+  src_path = origin[1]
+
+  blob_client = blob_service_client.get_blob_client(container=origin[0], blob=origin[1])
+
+  if not blob_client.exists():
+    if not os.path.exists(dest):
+      print("Destination directory does not exist.")
+      exit(1)
+
+    container_client = blob_service_client.get_container_client(container_name)
+    blob_list = container_client.list_blobs(name_starts_with=src_path)
+    src_prefix = os.path.dirname(src_path)
+    # src_prefix = os.path.dirname(src_path) + "/"
+    for blob in blob_list:
+      dest_path = dest.rstrip('/') + '/' + blob.name.replace(src_prefix, "", 1)
+      dest_folder = os.path.dirname(dest_path)
+      if not os.path.exists(dest_folder):
+        print("Creating directory: " + dest_folder)
+        os.makedirs(dest_folder, exist_ok=True)
+      print("Downloading " + container_name + ":" + blob.name + " to " + dest_folder + "/")
+      blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob.name)
+      with open(dest_path, "wb") as file:
+        file.write(blob_client.download_blob().readall())
+  else:
+    dest_path = dest
+    if os.path.isdir(dest):
+      dest_path = dest + "/" + os.path.basename(src_path)
+      
+    blob_client = blob_service_client.get_blob_client(container=container_name, blob=src_path)
+    print("Downloading " + container_name + ":" + src_path + " to " + dest_path)
+    with open(dest_path, "wb") as file:
+      file.write(blob_client.download_blob().readall())
 
 parser = argparse.ArgumentParser(prog='bs', epilog="Azure Blob Storage v" + __version__ + " - Python c3telemetry sample")
 subparsers = parser.add_subparsers(dest="command")
@@ -105,13 +173,13 @@ ls_parser.add_argument('path', metavar='<container-name>/<file-name>', help='pre
 ls_parser.add_argument('-d', '--dirs', dest='dirs', action='store_true', help='directories only')
 ls_parser.add_argument('-r', '--recursive', dest='recurse', action='store_true', help='all files recursively')
 
-upload_parser = subparsers.add_parser('upload', help='upload files')
-upload_parser.add_argument('src', help='src folder or file')
-upload_parser.add_argument('dest', metavar='<container-name>/<file-name>', help='dest folder or file')
+rm_parser = subparsers.add_parser('rm', help='remove files')
+rm_parser.add_argument('path', metavar='<container-name>/<file-name>', help='prefix to the blob name')
 
-download_parser = subparsers.add_parser('download', help='upload files')
-download_parser.add_argument('src', metavar='<container-name>/<file-name>', help='src folder or file')
-download_parser.add_argument('dest', help='dest folder or file')
+cp_parser = subparsers.add_parser('cp', help='copy files')
+cp_parser.add_argument('src', metavar='<container-name>:<file-name>', help='src folder or file')
+cp_parser.add_argument('dest', metavar='<container-name>:<file-name>', help='dest folder or file')
+cp_parser.add_argument('-f', '--force', dest='force', action='store_true', help='overwrite if exists')
 
 args = parser.parse_args()
 connect_str = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
@@ -122,9 +190,12 @@ blob_service_client = BlobServiceClient.from_connection_string(connect_str)
 
 if args.command == 'ls':
   ls(args.path, args)
-elif args.command == 'upload':
-  upload(args.src, args.dest, args)
-elif args.command == 'download':
-  download(args.src, args.dest, args)
+elif args.command == 'cp':
+  if ":" in args.dest: 
+    upload(args.src, args.dest, args)
+  else:
+    download(args.src, args.dest, args)
+elif args.command == 'rm':
+  rm(args.path, args)
 else:
   parser.print_help()
