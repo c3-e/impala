@@ -1,0 +1,3 @@
+#!/bin/sh
+
+impala-shell -i impalad:21000 -l --auth_creds_ok_in_clear -u impala --ldap_password_cmd="echo -n c3impala"

@@ -1,4 +1,4 @@
-#!/usr/local/share/c3/conda/bin/python
+#!/usr/bin/python
 
 # for container
 # !/usr/bin/python
@@ -114,7 +114,9 @@ def upload(src, dest, arg):
       for file in files:
         src_path = '/'.join([root, file])
 
-        dest = dest_path.rstrip('/') + '/' + src_path.replace(src_prefix, "", 1)
+        dest = src_path.replace(src_prefix, "", 1)
+        if dest_path is not None and dest_path != "":
+          dest = dest_path.rstrip('/') + '/' + src_path.replace(src_prefix, "", 1)
         print("Uploading " + src_path + " to " + container_name + ":" + os.path.dirname(dest) + "/")
 
         blob_client = blob_service_client.get_blob_client(container=sink[0], blob=dest)
@@ -135,9 +137,13 @@ def download(src, dest, arg):
   container_name = origin[0]
   src_path = origin[1]
 
-  blob_client = blob_service_client.get_blob_client(container=origin[0], blob=origin[1])
+  src_exists = False
+  if src_path is not None and src_path != "":
+    blob_client = blob_service_client.get_blob_client(container=container_name, blob=src_path)
+    if blob_client.exists():
+      src_exists = True
 
-  if not blob_client.exists():
+  if not src_exists:
     if not os.path.exists(dest):
       print("Destination directory does not exist.")
       exit(1)
@@ -151,11 +157,14 @@ def download(src, dest, arg):
       dest_folder = os.path.dirname(dest_path)
       if not os.path.exists(dest_folder):
         print("Creating directory: " + dest_folder)
-        os.makedirs(dest_folder, exist_ok=True)
+        os.makedirs(dest_folder)
       print("Downloading " + container_name + ":" + blob.name + " to " + dest_folder + "/")
       blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob.name)
-      with open(dest_path, "wb") as file:
-        file.write(blob_client.download_blob().readall())
+      if os.path.isdir(dest_path):
+        print("Skipping " + dest_path + " as it's a directory.")
+      else:
+        with open(dest_path, "wb") as file:
+          file.write(blob_client.download_blob().readall())
   else:
     dest_path = dest
     if os.path.isdir(dest):

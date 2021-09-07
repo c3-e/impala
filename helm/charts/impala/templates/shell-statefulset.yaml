@@ -1,5 +1,5 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   labels:
     service: impala-shell
@@ -9,13 +9,22 @@ spec:
   selector:
     matchLabels:
       io.kompose.service: impala-shell
-  strategy:
-    type: Recreate
+  serviceName: openldap
   template:
     metadata:
       labels:
         io.kompose.service: impala-shell
     spec:
+      initContainers:
+      - name: adjust-data-dir-permissions
+        image: alpine:3
+        command:
+        - chmod
+        - a+rwx
+        - /opt/impala/data
+        volumeMounts:
+        - name: data
+          mountPath: /opt/impala/data
       containers:
         - image: {{ .Values.impalaShell.image }}
           name: impala-shell
@@ -31,4 +40,19 @@ spec:
               memory: "4Gi"
             limits:
               memory: "16Gi"
+          volumeMounts:
+          - mountPath: /opt/impala/data
+            name: data
       restartPolicy: Always
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Ti
+      volumeMode: Filesystem

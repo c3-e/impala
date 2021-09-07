@@ -115,3 +115,4 @@ perf_results/
 docker/quickstart_conf/core-site.xml
 helm/charts/impala/values.yaml.*
 docker/c3-shell/data
+docker/c3-shell/c3telemetry/dev-asstmaint
