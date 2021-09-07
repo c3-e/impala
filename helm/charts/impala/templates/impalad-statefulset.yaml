@@ -30,7 +30,7 @@ spec:
             - -kudu_master_hosts=kudu-master-1:7051
             - -mt_dop_auto_fallback=true
             - -default_query_options=mt_dop=4,default_file_format=parquet,default_transactional_type=insert_only
-            - -mem_limit=4gb
+            - -mem_limit=26gb
             - --enable_ldap_auth
             - --ldap_uri=ldap://openldap:1389
             - --ldap_bind_password_cmd=echo -n adminpassword
@@ -47,7 +47,11 @@ spec:
             - containerPort: 21050
             - containerPort: 25000
             - containerPort: 28000
-          resources: {}
+          resources: 
+            limits:
+              memory: 32Gi
+            requests:
+              memory: 32Gi
           volumeMounts:
             - mountPath: /user/hive/warehouse
               name: impala-quickstart-warehouse

@@ -9,9 +9,9 @@ fs:
     storageSize: 100Mi
 impalad:
   image: apache/impala:81d5377c2-impalad_coord_exec
-  javaToolOptions: '"-Xmx1g"'
+  javaToolOptions: '"-Xmx4g"'
 impalaShell:
-  image: c3ai/c3-impala-shell:1.13
+  image: c3ai/c3-impala-shell:1.14
 catalogd:
   image: apache/impala:81d5377c2-catalogd
 hms:

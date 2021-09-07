@@ -109,7 +109,9 @@ def upload(src, dest, arg):
   dest_path = sink[1]
 
   if os.path.isdir(src):
-    src_prefix = os.path.dirname(src) + "/"
+    src_prefix = ""
+    if os.path.dirname(src) is not None and os.path.dirname(src) != "":
+      src_prefix = os.path.dirname(src) + "/"
     for root, subdirs, files in os.walk(src):
       for file in files:
         src_path = '/'.join([root, file])
