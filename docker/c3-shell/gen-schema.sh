@@ -34,4 +34,4 @@ EOF
 }
 export -f partition
 
-tr '/' ' ' <&0 | xargs -l bash -c 'partition $0 $1'
+sed 's/.*://' <&0 | tr '/' ' ' | xargs -l bash -c 'partition $0 $1'
