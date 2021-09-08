@@ -116,13 +116,13 @@ def upload(src, dest, arg):
       for file in files:
         src_path = '/'.join([root, file])
 
-        dest = src_path.replace(src_prefix, "", 1)
+        dest = src_path.replace(src_prefix, "", 1) # take out grandparent folder path
         if dest_path is not None and dest_path != "":
           dest = dest_path.rstrip('/') + '/' + src_path.replace(src_prefix, "", 1)
-        print("Uploading " + src_path + " to " + container_name + ":" + os.path.dirname(dest) + "/")
 
         blob_client = blob_service_client.get_blob_client(container=sink[0], blob=dest)
         with open(src_path, "rb") as data:
+          print("Uploading " + src_path + " to " + container_name + ":" + os.path.dirname(dest) + "/")
           blob_client.upload_blob(data, overwrite=arg.force)
   else:
     dest = os.path.basename(src)
@@ -157,15 +157,18 @@ def download(src, dest, arg):
     for blob in blob_list:
       dest_path = dest.rstrip('/') + '/' + blob.name.replace(src_prefix, "", 1)
       dest_folder = os.path.dirname(dest_path)
+      if os.path.exists(dest_folder) and dest_folder is not None and not os.path.isdir(dest_folder):
+        print("A non-directory: " + dest_folder + " is deleted.") 
+        os.remove(dest_folder)
       if not os.path.exists(dest_folder):
-        print("Creating directory: " + dest_folder)
+        print("Creating directory: " + dest_folder + ".")
         os.makedirs(dest_folder)
-      print("Downloading " + container_name + ":" + blob.name + " to " + dest_folder + "/")
       blob_client = blob_service_client.get_blob_client(container=container_name, blob=blob.name)
       if os.path.isdir(dest_path):
         print("Skipping " + dest_path + " as it's a directory.")
       else:
         with open(dest_path, "wb") as file:
+          print("Downloading " + container_name + ":" + blob.name + " to " + dest_folder + "/")
           file.write(blob_client.download_blob().readall())
   else:
     dest_path = dest
@@ -188,7 +191,7 @@ rm_parser = subparsers.add_parser('rm', help='remove files')
 rm_parser.add_argument('path', metavar='<container-name>/<file-name>', help='prefix to the blob name')
 
 cp_parser = subparsers.add_parser('cp', help='copy files')
-cp_parser.add_argument('src', metavar='<container-name>:<file-name>', help='src folder or file')
+cp_parser.add_argument('src', metavar='<container-name>:<file-name>', nargs='+', help='src folder or file')
 cp_parser.add_argument('dest', metavar='<container-name>:<file-name>', help='dest folder or file')
 cp_parser.add_argument('-f', '--force', dest='force', action='store_true', help='overwrite if exists')
 
@@ -203,9 +206,11 @@ if args.command == 'ls':
   ls(args.path, args)
 elif args.command == 'cp':
   if ":" in args.dest: 
-    upload(args.src, args.dest, args)
+    for src in args.src:
+      upload(src, args.dest, args)
   else:
-    download(args.src, args.dest, args)
+    for src in args.src:
+      download(src, args.dest, args)
 elif args.command == 'rm':
   rm(args.path, args)
 else:
