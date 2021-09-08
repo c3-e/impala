@@ -153,13 +153,21 @@ def download(src, dest, arg):
     container_client = blob_service_client.get_container_client(container_name)
     blob_list = container_client.list_blobs(name_starts_with=src_path)
     src_prefix = os.path.dirname(src_path)
-    # src_prefix = os.path.dirname(src_path) + "/"
     for blob in blob_list:
       dest_path = dest.rstrip('/') + '/' + blob.name.replace(src_prefix, "", 1)
       dest_folder = os.path.dirname(dest_path)
-      if os.path.exists(dest_folder) and dest_folder is not None and not os.path.isdir(dest_folder):
-        print("A non-directory: " + dest_folder + " is deleted.") 
-        os.remove(dest_folder)
+      
+      # delete a non-directory file in the parent folder hierarchy, on the local file system
+      # for example, xyz is a regular file in data/xyz/abc 
+      fixed = False
+      parent = dest_folder
+      while parent is not None and parent is not "" and not fixed:
+        if os.path.exists(parent) and not os.path.isdir(parent):
+          print("A non-directory: " + parent + " is deleted.")
+          fixed = True
+        else:
+          parent = os.path.dirname(parent)
+
       if not os.path.exists(dest_folder):
         print("Creating directory: " + dest_folder + ".")
         os.makedirs(dest_folder)
