@@ -163,7 +163,8 @@ def download(src, dest, arg):
       parent = dest_folder
       while parent is not None and parent is not "" and not fixed:
         if os.path.exists(parent) and not os.path.isdir(parent):
-          print("A non-directory: " + parent + " is deleted.")
+          print("A non-directory: " + parent + " is deleted to download files under a directory with the same name.")
+          os.remove(parent)
           fixed = True
         else:
           parent = os.path.dirname(parent)
