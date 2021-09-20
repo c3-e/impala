@@ -7,10 +7,25 @@ RUN curl -sL https://aka.ms/InstallAzureCLIDeb | bash
 # install azure-storage-blob python lib
 RUN pip install azure-storage-blob
 
+# install golang
+# RUN apt -y update && apt -y upgrade && apt -y install golang-go
+RUN VERSION="1.15.8" && ARCH="amd64" && \
+    curl -O -L "https://golang.org/dl/go${VERSION}.linux-${ARCH}.tar.gz" && \
+    tar -xf "go${VERSION}.linux-${ARCH}.tar.gz" && \
+    mv go /usr/local && \
+    rm -f "go${VERSION}.linux-${ARCH}.tar.gz"
+
+# install b3
 COPY b3 /usr/local/bin
 COPY impala /usr/local/bin
 COPY gen-schema.sh /usr/local/bin
 RUN mkdir -p /opt/impala/data && chmod a+rwx /opt/impala/data
 
+RUN mkdir /home/impala && chown impala:impala /home/impala
+
 USER impala
+
+RUN echo 'export GOPATH=$HOME/go' > /home/impala/.bashrc && \
+    echo 'export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin' >> /home/impala/.bashrc
+
 RUN cd data
