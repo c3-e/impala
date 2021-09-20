@@ -23,9 +23,14 @@ RUN mkdir -p /opt/impala/data && chmod a+rwx /opt/impala/data
 
 RUN mkdir /home/impala && chown impala:impala /home/impala
 
+# install golang
+COPY golog/ /opt/impala/data/golog/
+COPY goterm/ /opt/impala/data/goterm/
+RUN cd /opt/impala/data/golog && /usr/local/go/bin/go build -o golog 
+RUN cd /opt/impala/data/goterm && /usr/local/go/bin/go build -o goterm && \
+    cd /opt/impala/data
+
 USER impala
 
 RUN echo 'export GOPATH=$HOME/go' > /home/impala/.bashrc && \
     echo 'export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin' >> /home/impala/.bashrc
-
-RUN cd data

@@ -1,0 +1,216 @@
+<!doctype html>
+  <html style="height: 100%">
+    <head>
+      <link rel="stylesheet" href="static/golog.css" />
+      <link rel="stylesheet" href="static/xterm.css" />
+      <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css"/>
+
+      <script src="static/xterm.js"></script>
+      <script src="static/addons/xterm-addon-fit/lib/xterm-addon-fit.js"></script>
+      <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+      <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+      <script type="module">
+        var term;
+        var websocket;
+        var windowSize;
+        var logs = [];
+        var hosts = [];
+        var offset = 0;
+        var queryOffset = 0;
+        var lineNo = 1;
+
+        var $body;
+
+        $(() => {
+          $("#datepicker").datepicker({ dateFormat: 'yy-mm-dd' });
+          $("#datepicker").datepicker('setDate', new Date());
+          $("#run").click( event => {
+            $body.addClass("loading");
+
+            offset = 0;
+            queryOffset = 0;
+            websocket.send(new TextEncoder().encode(query(queryOffset, 1000)));
+          });
+          $("#term").focusout( event => {
+            writePage();
+          });
+        });
+
+        function query(offset, limit) {
+          var service = document.getElementById('service').value;
+          var term = document.getElementById('term').value;
+          if (term == "") term = "%"
+          if (term != "%") term = "%" + term + "%";
+          var dt = document.getElementById('datepicker').value;
+          console.log(service, term, dt);
+          return "QUERY select * from ablogs.raw where dt <= '" + dt + "' and service = '" + service + "' and message like '" + term + "' order by ts desc limit " + limit + " offset " + offset + ";"
+        }
+
+        function writePage() {
+            var page = logs.slice(offset, offset + windowSize.rows - 1).join("\r\n");
+            var keyword = document.getElementById('term').value;
+            if (keyword && keyword != "%") {
+              page = page.replaceAll(keyword, '\x1b[1;31m' + keyword + '\x1b[37m');
+            }
+            // term.clear();
+            term.reset();
+            term.write(page);
+            term.write("\r\n:");
+
+            $body.removeClass("loading");
+        }
+
+        function normalize(buf) {
+          var str = new Uint8Array(buf).reduce((acc, i) => acc += String.fromCharCode.apply(null, [i]), '');
+          var hosts = [];
+          var lines = [];
+          var state = "s0";
+          var host = "";
+          var line = "";
+          for (var i = 0; i < str.length; i++) {
+            var ch = str.charAt(i);
+            switch (state) {
+              case "s0":
+                if (ch == ' ') state = "s1";
+                else host += ch;
+                break;
+              case "s1":
+                if (ch == '\r') state = "s2";
+                else if(ch != '\n') line += ch;
+                break;
+              case "s2":
+                if (ch == '\n') {
+                  lines.push(line);
+                  line = "";
+                  hosts.push(host);
+                  host = "";
+                  state = "s0"
+                } else state = "s1";
+                break;
+            }
+            if (line.length >= windowSize.cols) {
+              lines.push(line);
+              line = "";
+              hosts.push(host);
+            }
+          }
+          return [lines, hosts];
+        }
+
+        websocket = new WebSocket("ws://" + window.location.hostname + ":" + window.location.port + "/term");
+        websocket.binaryType = "arraybuffer";
+        $body = $("body");
+
+        websocket.onopen = function(evt) {
+          // term = new Terminal({"isWrapped" : true});
+          term = new Terminal();
+          term.onResize(e => {
+            windowSize = e;
+            websocket.send(new TextEncoder().encode("\x01" + JSON.stringify({cols: e.cols, rows: e.rows})))
+          });
+          term.onSelectionChange(e => {
+            var position = term.getSelectionPosition();
+            if (position && position.startRow) {
+              document.getElementById("lhost").innerHTML = hosts[offset + position.startRow];
+            }
+          });
+          term.open(document.getElementById('terminal'));
+          const fitAddon = new FitAddon.FitAddon();
+          term.loadAddon(fitAddon);
+          fitAddon.fit();
+          term.onData(key => {
+            var code = key.charCodeAt(0);
+
+            if (code >= 48 && code < 57) {
+              lineNo = lineNo * 10 + (code - 48);
+              term.write(key.charAt(0));
+            } else {
+              if (code == 27) {
+                if (key.substr(1) === '[B') {
+                  offset += 1;
+                } else if (key.substr(1) === '[A') {
+                  offset = Math.max(0, offset - 1);
+                }
+              } else if (code == 6) {
+                offset += windowSize.rows - 1;
+              } else if (code == 2) {
+                offset = Math.max(0, offset - windowSize.rows + 1);
+              } else if (code == 71) {
+                lineNo = Math.max(1, lineNo);
+                offset = lineNo - 1;
+              }
+              lineNo = 0;
+
+              if (offset + windowSize.rows - 1 >= logs.length) {
+                queryOffset += 1000;
+                websocket.send(new TextEncoder().encode(query(queryOffset, 1000)));
+              } else {
+                writePage();
+              }
+            }
+          });
+          websocket.onmessage = function(evt) {
+            if (evt.data instanceof ArrayBuffer) {
+              if (offset == 0) {
+                var logsAndHosts = normalize(evt.data);
+                logs = logsAndHosts[0];
+                hosts = logsAndHosts[1];
+              } else {
+                var logsAndHosts = normalize(evt.data);
+                logs = logs.concat(logsAndHosts[0]);
+                hosts = hosts.concat(logsAndHosts[1]);
+                // logs = logs.concat(normalize(evt.data));
+                console.log("Retrieved 1000 more", logs.length);
+              }
+              writePage();
+              term.focus();
+            } else {
+              alert(evt.data)
+            }
+          }
+
+          websocket.onclose = function(evt) {
+            term.write("Session terminated");
+            term.destroy();
+          }
+
+          websocket.onerror = function(evt) {
+            if (typeof console.log == "function") {
+              console.log(evt)
+            }
+          }
+
+          $body.addClass("loading");
+          queryOffset = 0;
+          websocket.send(new TextEncoder().encode(query(queryOffset, 10)));
+        }
+      </script>
+    </head>
+    <body style="height: 100%">
+      <div style="height: calc(100% - 8px)">
+        <div class="modal", style="z-index: 200000"></div>
+        <div id="pannel" style="height: 24px">
+          cluster:
+          <select name="cluster" id="cluster">
+            <option>sean-local</option>
+          </select>
+          service:
+          <select name="service" id="service">
+            <option>c3_server</option>
+            <option>kern</option>
+          </select>
+          host:
+          <input name="host" id="host"/>
+          keyword:
+          <input name="term" id="term"/>
+          date:
+          <input type="text" id="datepicker" style="position: relative; z-index: 100000;"/>
+          <button name="run" id="run">Query</button>
+        </div>
+        <div id="terminal" style="height: calc( 100% - 48px );"></div>
+        <div id="lineDetails" style="height: 24px; color:grey">
+          host: <div id="lhost" name="lhost" style="display:inline-block;"/>
+        </div>
+      </div>
+    </body>
+  </html>
