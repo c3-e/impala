@@ -17,6 +17,8 @@ spec:
         io.kompose.service: impala-shell
     spec:
       initContainers:
+      # the main impala-shell container uses impala user; use root to 
+      # initialized directories
       - name: adjust-data-dir-permissions
         image: alpine:3
         command:
@@ -33,9 +35,10 @@ spec:
             - name: AZURE_STORAGE_CONNECTION_STRING
               value: '{{ .Values.impalaShell.azureStorageConnectionString }}'
           command: 
-          - sleep
+          - /opt/impala/bin/wrapper.sh
+          # - sleep
           args:
-          - infinity
+          # - infinity
           ports:
             - containerPort: 3000
             - containerPort: 3010

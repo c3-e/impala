@@ -25,6 +25,7 @@ RUN mkdir /home/impala && chown impala:impala /home/impala
 
 # install golang services
 RUN mkdir -p /opt/impala/bin && chmod a+rwx /opt/impala/bin
+COPY wrapper.sh /opt/impala/bin/wrapper.sh
 COPY golog/ /opt/impala/bin/golog/
 COPY goterm/ /opt/impala/bin/goterm/
 RUN cd /opt/impala/bin/golog && /usr/local/go/bin/go build -o golog 
