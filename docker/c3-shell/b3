@@ -192,7 +192,7 @@ def download(src, dest, arg):
 parser = argparse.ArgumentParser(prog='bs', epilog="Azure Blob Storage v" + __version__ + " - Python c3telemetry sample")
 subparsers = parser.add_subparsers(dest="command")
 ls_parser = subparsers.add_parser('ls', help='list files')
-ls_parser.add_argument('path', metavar='<container-name>/<file-name>', help='prefix to the blob name')
+ls_parser.add_argument('path', metavar='<container-name>:<file-name>', help='prefix to the blob name')
 ls_parser.add_argument('-d', '--dirs', dest='dirs', action='store_true', help='directories only')
 ls_parser.add_argument('-r', '--recursive', dest='recurse', action='store_true', help='all files recursively')
 

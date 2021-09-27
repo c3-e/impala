@@ -17,6 +17,7 @@
         var hosts = [];
         var offset = 0;
         var queryOffset = 0;
+        var limit = 1000;
         var lineNo = 1;
 
         var $body;
@@ -29,7 +30,7 @@
 
             offset = 0;
             queryOffset = 0;
-            websocket.send(new TextEncoder().encode(query(queryOffset, 1000)));
+            websocket.send(new TextEncoder().encode(query(queryOffset, limit)));
           });
           $("#term").focusout( event => {
             writePage();
@@ -142,8 +143,9 @@
               lineNo = 0;
 
               if (offset + windowSize.rows - 1 >= logs.length) {
-                queryOffset += 1000;
-                websocket.send(new TextEncoder().encode(query(queryOffset, 1000)));
+                // TODO: not handling the end of rows from impala server
+                queryOffset += limit;
+                websocket.send(new TextEncoder().encode(query(queryOffset, limit)));
               } else {
                 writePage();
               }
@@ -160,7 +162,7 @@
                 logs = logs.concat(logsAndHosts[0]);
                 hosts = hosts.concat(logsAndHosts[1]);
                 // logs = logs.concat(normalize(evt.data));
-                console.log("Retrieved 1000 more", logs.length);
+                console.log("Retrieved " + limit + " more", logs.length);
               }
               writePage();
               term.focus();
@@ -182,7 +184,7 @@
 
           $body.addClass("loading");
           queryOffset = 0;
-          websocket.send(new TextEncoder().encode(query(queryOffset, 10)));
+          websocket.send(new TextEncoder().encode(query(queryOffset, limit)));
         }
       </script>
     </head>

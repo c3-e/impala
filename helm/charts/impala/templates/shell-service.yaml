@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    kompose.cmd: kompose convert
+    kompose.version: 1.23.0 (bc7d9f4f)
+    # service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+  labels:
+    io.kompose.service: impala-shell
+  name: impala-shell
+spec:
+  type: LoadBalancer
+  # do not need as the nsg is configured for office
+  # loadBalancerSourceRanges:
+  #   - 12.226.154.130/32
+  # externalTrafficPolicy: Cluster
+  ports:
+    - name: "3000"
+      port: 80
+      targetPort: 3000
+    - name: "3010"
+      port: 3010
+      targetPort: 3010
+  selector:
+    io.kompose.service: impala-shell

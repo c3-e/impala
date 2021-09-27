@@ -132,7 +132,7 @@ func handleWebsocket(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-    var listen = flag.String("listen", "127.0.0.1:3000", "Host:port to listen on")
+    var listen = flag.String("listen", "0.0.0.0:3000", "Host:port to listen on")
     var assetsPath = flag.String("assets", "./assets", "Path to assets")
     kubectl = flag.Bool("kubectl", false, "Kubectl exec for local testing")
 

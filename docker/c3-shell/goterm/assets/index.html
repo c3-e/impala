@@ -18,14 +18,17 @@
 
         websocket.onopen = function(evt) {
           term = new Terminal();
-          term.focus();
-        term.onResize(function(evt) {
-          websocket.send(new TextEncoder().encode("\x01" + JSON.stringify({cols: evt.cols, rows: evt.rows})))
-        });
+
+          term.onResize(function(evt) {
+            websocket.send(new TextEncoder().encode("\x01" + JSON.stringify({cols: evt.cols, rows: evt.rows})))
+            term.focus();
+          });
+
           term.open(document.getElementById('terminal'));
           const fitAddon = new FitAddon.FitAddon();
           term.loadAddon(fitAddon);
           fitAddon.fit();
+
           term.onData(data => {
             websocket.send(new TextEncoder().encode("\x00" + data));
           });

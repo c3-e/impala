@@ -3,13 +3,14 @@ kind: StatefulSet
 metadata:
   labels:
     service: impala-shell
+    io.kompose.service: impala-shell
   name: impala-shell
 spec:
   replicas: 1
   selector:
     matchLabels:
       io.kompose.service: impala-shell
-  serviceName: openldap
+  serviceName: impala-shell
   template:
     metadata:
       labels:
@@ -35,6 +36,9 @@ spec:
           - sleep
           args:
           - infinity
+          ports:
+            - containerPort: 3000
+            - containerPort: 3010
           resources:
             requests:
               memory: "4Gi"

@@ -35,7 +35,7 @@ var upgrader = websocket.Upgrader{
     WriteBufferSize: 1024,
 }
 
-var impalad string
+var impalad *string
 var test *bool
 
 func handleWebsocket(w http.ResponseWriter, r *http.Request) {
@@ -272,7 +272,7 @@ func abfs() string {
 func connect() *sql.DB {
     opts := impala.DefaultOptions
 
-    opts.Host = impalad
+    opts.Host = *impalad
     opts.Port = "21050"
 
     // enable LDAP authentication:
@@ -291,14 +291,16 @@ func connect() *sql.DB {
 }
 
 func main() {
-    var listen = flag.String("listen", "127.0.0.1:3000", "Host:port to listen on")
+    var listen = flag.String("listen", "0.0.0.0:3000", "Host:port to listen on")
     var assetsPath = flag.String("assets", "./assets", "Path to assets")
-    impalad = *flag.String("impalad", "localhost", "Host name for impalad")
+    impalad = flag.String("impalad", "localhost", "Host name for impalad")
     test = flag.Bool("test", false, "Enable to test with a local file")
 
     flag.Parse()
 
+    fmt.Printf("listen=%s\n", *listen)
     fmt.Printf("assets=%s\n", *assetsPath)
+    fmt.Printf("impalad=%s\n", *impalad)
     fmt.Printf("test=%t\n", *test)
 
     mime.AddExtensionType(".css", "text/css; charset=utf-8")
