@@ -1,4 +1,4 @@
-export VER=1.27
+export VER=1.34
 
 docker build -t c3ai/c3-impala-shell:$VER .
 docker tag c3ai/c3-impala-shell:$VER c3ai/c3-impala-shell:latest

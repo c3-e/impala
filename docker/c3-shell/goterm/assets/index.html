@@ -29,6 +29,8 @@
           term.loadAddon(fitAddon);
           fitAddon.fit();
 
+          // cd to working directory
+          websocket.send(new TextEncoder().encode("\x00" + "cd /opt/impala/data\n"));
           term.onData(data => {
             websocket.send(new TextEncoder().encode("\x00" + data));
           });
