@@ -1,0 +1,35 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: shell-cron
+spec:
+  schedule: "? 2 * * *"
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - image: {{ .Values.impalaShell.image }}
+            name: c3telemetry
+            env:
+              - name: AZURE_STORAGE_CONNECTION_STRING
+                value: '{{ .Values.impalaShell.azureStorageConnectionString }}'
+            command: ["/bin/sh", "-c"]
+            args:
+            - /opt/impala/c3telemetry/partitions_to_recreate.sh > /tmp/partitions.sql && impala -f /tmp/partitions.sql
+            resources:
+              requests:
+                memory: "4Gi"
+              limits:
+                memory: "16Gi"
+            volumeMounts:
+            - name: c3telemetry-volume
+              mountPath: /opt/impala/c3telemetry
+          volumes:
+          - name: c3telemetry-volume
+            configMap:
+              name: c3telemetry
+              defaultMode: 0777
+          restartPolicy: Never

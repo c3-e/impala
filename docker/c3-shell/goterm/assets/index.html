@@ -30,7 +30,7 @@
           fitAddon.fit();
 
           // cd to working directory
-          websocket.send(new TextEncoder().encode("\x00" + "cd /opt/impala/data\n"));
+          websocket.send(new TextEncoder().encode("\x00" + "cd /opt/impala/data\necho To try out a quick sql query, press enter:\nimpala -f hello.sql"));
           term.onData(data => {
             websocket.send(new TextEncoder().encode("\x00" + data));
           });

@@ -11,7 +11,7 @@ impalad:
   image: apache/impala:81d5377c2-impalad_coord_exec
   javaToolOptions: '"-Xmx4g"'
 impalaShell:
-  image: c3ai/c3-impala-shell:1.34
+  image: c3ai/c3-impala-shell:1.36
 catalogd:
   image: apache/impala:81d5377c2-catalogd
 hms:
