@@ -1,0 +1,28 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: shell-letsencrypt-prod
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    acme.cert-manager.io/http01-edit-in-place: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    cert-manager.io/acme-challenge-type: http01
+spec:
+  tls:
+  - hosts:
+    - ops.c3dev.cloud
+    secretName: shell-cert-secret
+  rules:
+  - host: ops.c3dev.cloud
+    http:
+      paths:
+      - path: /log/(.*)
+        backend:
+          serviceName: impala-shell
+          servicePort: 3010
+      - path: /(.*)
+        backend:
+          serviceName: impala-shell
+          servicePort: 80

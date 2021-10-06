@@ -98,7 +98,12 @@
           return [lines, hosts];
         }
 
-        websocket = new WebSocket("ws://" + window.location.hostname + ":" + window.location.port + "/term");
+        // var protocol = "wss://";
+        // if (location.protocol !== 'https:') {
+        //   protocol = "ws://";
+        // }
+        // websocket = new WebSocket(protocol + window.location.hostname + ":" + window.location.port + "/term");
+        websocket = new WebSocket(window.location.href.replace("http", "ws") + "/term");
         websocket.binaryType = "arraybuffer";
         $body = $("body");
 

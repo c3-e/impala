@@ -9,7 +9,7 @@ metadata:
     io.kompose.service: impala-shell
   name: impala-shell
 spec:
-  type: LoadBalancer
+  type: {{ .Values.impalaShell.serviceType }}
   # do not need as the nsg is configured for office
   # loadBalancerSourceRanges:
   #   - 12.226.154.130/32

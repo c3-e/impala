@@ -10,7 +10,13 @@
       <div id="terminal" style="height: 100%"></div>
       <script type="module">
         var term;
-        var websocket = new WebSocket("ws://" + window.location.hostname + ":" + window.location.port + "/term");
+        // var protocol = "wss://";
+        // if (location.protocol !== 'https:') {
+        //   protocol = "ws://";
+        // }
+        // var websocket = new WebSocket(protocol + window.location.hostname + ":" + window.location.port + "/term");
+        var websocket = new WebSocket(window.location.href.replace("http", "ws") + "/term");
+
         websocket.binaryType = "arraybuffer";
         function ab2str(buf) {
           return String.fromCharCode.apply(null, new Uint8Array(buf));
