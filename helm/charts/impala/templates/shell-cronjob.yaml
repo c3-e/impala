@@ -3,7 +3,9 @@ kind: CronJob
 metadata:
   name: shell-cron
 spec:
+  # schedule: "*/10 * * * *"
   schedule: "? 2 * * *"
+  concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 5
   failedJobsHistoryLimit: 5
   jobTemplate:
@@ -33,4 +35,4 @@ spec:
             configMap:
               name: c3telemetry
               defaultMode: 0777
-          restartPolicy: Never
+          restartPolicy: OnFailure
