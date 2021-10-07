@@ -34,6 +34,8 @@ spec:
           env:
             - name: AZURE_STORAGE_CONNECTION_STRING
               value: '{{ .Values.impalaShell.azureStorageConnectionString }}'
+            - name: AUTH_CALLBACK
+              value: '{{ .Values.impalaShell.authCallback }}'
           command: 
           - /opt/impala/bin/wrapper.sh
           # - sleep

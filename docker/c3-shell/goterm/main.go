@@ -11,12 +11,16 @@ import (
     "os/exec"
     "strings"
     "syscall"
+    "time"
     "unsafe"
 
     log "github.com/sirupsen/logrus"
     "github.com/gorilla/mux"
     "github.com/gorilla/websocket"
-    "github.com/kr/pty"
+    "github.com/creack/pty"
+    // Sean A. kr does not work
+    // "github.com/kr/pty"
+    oktaUtils "goterm/utils"
 )
 
 type windowSize struct {
@@ -32,8 +36,11 @@ var upgrader = websocket.Upgrader{
 }
 
 var kubectl *bool
+var authCallback *string
 
 func handleWebsocket(w http.ResponseWriter, r *http.Request) {
+    log.Println("Accepting a ws request...")
+
     l := log.WithField("remoteaddr", r.RemoteAddr)
     conn, err := upgrader.Upgrade(w, r, nil)
     if err != nil {
@@ -131,21 +138,66 @@ func handleWebsocket(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+func Wrap(handler http.Handler) http.HandlerFunc {
+    var etagHeaders = []string{
+        "ETag",
+        "If-Modified-Since",
+        "If-Match",
+        "If-None-Match",
+        "If-Range",
+        "If-Unmodified-Since",
+    }
+
+    return func(w http.ResponseWriter, r *http.Request) {
+        for _, v := range etagHeaders {
+            if r.Header.Get(v) != "" {
+                r.Header.Del(v)
+            }
+        }
+        w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
+        w.Header().Set("Expires", time.Unix(0, 0).Format(http.TimeFormat))
+        w.Header().Set("Pragma", "no-cache")
+        if false {
+            handler.ServeHTTP(w,r)
+            log.Println("served no auth, ", r.URL)
+        } else if isAuthenticated(r) {
+            handler.ServeHTTP(w, r)
+            log.Println("served: ", r.URL)
+            return
+        } else {
+            log.Println("Not authenticated, redirecting to login page...")
+            http.Redirect(w, r, "login", 301)
+            // http.Redirect(w, r, "http://localhost:3000/login", 301)
+        }
+    }
+}
+
 func main() {
+    oktaUtils.ParseEnvironment()
+
     var listen = flag.String("listen", "0.0.0.0:3000", "Host:port to listen on")
     var assetsPath = flag.String("assets", "./assets", "Path to assets")
     kubectl = flag.Bool("kubectl", false, "Kubectl exec for local testing")
 
+    authCallback = flag.String("authcallback", "http://localhost:3000/authorization-code/callback", "Authentication Callback URL")
+
     flag.Parse()
-    fmt.Printf("assets=%s\n", assetsPath)
+    fmt.Printf("assets=%s\n", *assetsPath)
     fmt.Printf("kubectl=%t\n", *kubectl)
+    fmt.Printf("authCallback=%t\n", *authCallback)
 
     mime.AddExtensionType(".css", "text/css; charset=utf-8")
 
     r := mux.NewRouter()
 
+    r.HandleFunc("/login", LoginHandler)
+    r.HandleFunc("/authorization-code/callback", AuthCodeCallbackHandler)
+    // r.HandleFunc("/profile", ProfileHandler)
+    r.HandleFunc("/logout", LogoutHandler)
     r.HandleFunc("/term", handleWebsocket)
-    r.PathPrefix("/").Handler(http.FileServer(http.Dir(*assetsPath)))
+    r.PathPrefix("/").Handler(Wrap(http.FileServer(http.Dir(*assetsPath))))
+    // r.PathPrefix("/").Handler(http.FileServer(http.Dir(*assetsPath)))
+
 
     log.Info("Demo Websocket/Xterm terminal")
     log.Warn("Warning, this is a completely insecure daemon that permits anyone to connect and control your computer, please don't run this anywhere")

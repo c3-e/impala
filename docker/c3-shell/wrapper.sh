@@ -2,7 +2,7 @@
 
 # Start the first process
 first=goterm
-cd /opt/impala/bin/goterm && ./goterm &
+cd /opt/impala/bin/goterm && . .env && ./goterm -authcallback ${AUTH_CALLBACK} &
 status=$?
 if [ $status -ne 0 ]; then
   echo "Failed to start $first process: $status"

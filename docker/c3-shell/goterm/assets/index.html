@@ -15,7 +15,7 @@
         //   protocol = "ws://";
         // }
         // var websocket = new WebSocket(protocol + window.location.hostname + ":" + window.location.port + "/term");
-        var websocket = new WebSocket(window.location.href.replace("http", "ws") + "/term");
+        var websocket = new WebSocket(window.location.href.replace("http", "ws").replace(/\/$/, "") + "/term");
 
         websocket.binaryType = "arraybuffer";
         function ab2str(buf) {
