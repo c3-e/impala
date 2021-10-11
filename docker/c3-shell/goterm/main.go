@@ -37,6 +37,7 @@ var upgrader = websocket.Upgrader{
 
 var kubectl *bool
 var authCallback *string
+var useNonce *bool
 
 func handleWebsocket(w http.ResponseWriter, r *http.Request) {
     log.Println("Accepting a ws request...")
@@ -180,11 +181,13 @@ func main() {
     kubectl = flag.Bool("kubectl", false, "Kubectl exec for local testing")
 
     authCallback = flag.String("authcallback", "http://localhost:3000/authorization-code/callback", "Authentication Callback URL")
+    useNonce = flag.Bool("nonce", false, "validate nonce")
 
     flag.Parse()
     fmt.Printf("assets=%s\n", *assetsPath)
     fmt.Printf("kubectl=%t\n", *kubectl)
-    fmt.Printf("authCallback=%t\n", *authCallback)
+    fmt.Printf("authCallback=%s\n", *authCallback)
+    fmt.Printf("nonce=%t\n", *useNonce)
 
     mime.AddExtensionType(".css", "text/css; charset=utf-8")
 

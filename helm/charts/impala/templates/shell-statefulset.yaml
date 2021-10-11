@@ -34,6 +34,12 @@ spec:
           env:
             - name: AZURE_STORAGE_CONNECTION_STRING
               value: '{{ .Values.impalaShell.azureStorageConnectionString }}'
+            - name: ISSUER
+              value: '{{ .Values.impalaShell.issuer }}'
+            - name: CLIENT_ID
+              value: '{{ .Values.impalaShell.clientId }}'
+            - name: CLIENT_SECRET
+              value: '{{ .Values.impalaShell.clientSecret }}'
             - name: AUTH_CALLBACK
               value: '{{ .Values.impalaShell.authCallback }}'
           command: 
