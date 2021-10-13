@@ -9,12 +9,14 @@ import (
     "net/http"
     "os"
     "os/exec"
-    "strings"
     "syscall"
     "time"
     "unsafe"
 
+    "app"
     log "github.com/sirupsen/logrus"
+    "login"
+    "middlewares"
     "github.com/gorilla/mux"
     "github.com/gorilla/websocket"
     "github.com/creack/pty"
@@ -35,6 +37,8 @@ var upgrader = websocket.Upgrader{
     WriteBufferSize: 1024,
 }
 
+var auth *string
+var assetsPath *string
 var kubectl *bool
 var authCallback *string
 var useNonce *bool
@@ -158,58 +162,65 @@ func Wrap(handler http.Handler) http.HandlerFunc {
         w.Header().Set("Cache-Control", "no-cache, private, max-age=0")
         w.Header().Set("Expires", time.Unix(0, 0).Format(http.TimeFormat))
         w.Header().Set("Pragma", "no-cache")
-        if false {
-            handler.ServeHTTP(w,r)
-            log.Println("served no auth, ", r.URL)
-        } else if isAuthenticated(r) {
+
+        if *auth == "azure" {
+            middlewares.IsAuthenticated(w, r, login.LoginHandler)
             handler.ServeHTTP(w, r)
-            log.Println("served: ", r.URL)
-            return
         } else {
-            log.Println("Not authenticated, redirecting to login page...")
-            http.Redirect(w, r, "login", 301)
-            // http.Redirect(w, r, "http://localhost:3000/login", 301)
+            if false {
+                handler.ServeHTTP(w,r)
+            } else if isAuthenticated(r) {
+                handler.ServeHTTP(w, r)
+                return
+            } else {
+                http.Redirect(w, r, "login", 301)
+            }
         }
     }
 }
 
 func main() {
-    oktaUtils.ParseEnvironment()
-
     var listen = flag.String("listen", "0.0.0.0:3000", "Host:port to listen on")
-    var assetsPath = flag.String("assets", "./assets", "Path to assets")
+    assetsPath = flag.String("assets", "./assets", "Path to assets")
     kubectl = flag.Bool("kubectl", false, "Kubectl exec for local testing")
 
+    auth = flag.String("auth", "azure", "auth provider, azure or okta")
     authCallback = flag.String("authcallback", "http://localhost:3000/authorization-code/callback", "Authentication Callback URL")
     useNonce = flag.Bool("nonce", false, "validate nonce")
 
     flag.Parse()
     fmt.Printf("assets=%s\n", *assetsPath)
     fmt.Printf("kubectl=%t\n", *kubectl)
+    fmt.Printf("auth=%s\n", *auth)
     fmt.Printf("authCallback=%s\n", *authCallback)
     fmt.Printf("nonce=%t\n", *useNonce)
 
     mime.AddExtensionType(".css", "text/css; charset=utf-8")
 
-    r := mux.NewRouter()
+    if *auth == "azure" {
+        app.Init()
+        StartServer()
+    } else {
+        oktaUtils.ParseEnvironment()
 
-    r.HandleFunc("/login", LoginHandler)
-    r.HandleFunc("/authorization-code/callback", AuthCodeCallbackHandler)
-    // r.HandleFunc("/profile", ProfileHandler)
-    r.HandleFunc("/logout", LogoutHandler)
-    r.HandleFunc("/term", handleWebsocket)
-    r.PathPrefix("/").Handler(Wrap(http.FileServer(http.Dir(*assetsPath))))
-    // r.PathPrefix("/").Handler(http.FileServer(http.Dir(*assetsPath)))
+        r := mux.NewRouter()
+        r.HandleFunc("/login", LoginHandler)
+        r.HandleFunc("/authorization-code/callback", AuthCodeCallbackHandler)
+        // r.HandleFunc("/profile", ProfileHandler)
+        r.HandleFunc("/logout", LogoutHandler)
+        r.HandleFunc("/term", handleWebsocket)
+        r.PathPrefix("/").Handler(Wrap(http.FileServer(http.Dir(*assetsPath))))
+        // r.PathPrefix("/").Handler(http.FileServer(http.Dir(*assetsPath)))
 
-
-    log.Info("Demo Websocket/Xterm terminal")
-    log.Warn("Warning, this is a completely insecure daemon that permits anyone to connect and control your computer, please don't run this anywhere")
-
-    if !(strings.HasPrefix(*listen, "127.0.0.1") || strings.HasPrefix(*listen, "localhost")) {
-        log.Warn("Danger Will Robinson - This program has no security built in and should not be exposed beyond localhost, you've been warned")
+        if err := http.ListenAndServe(*listen, r); err != nil {
+            log.WithError(err).Fatal("Something went wrong with the webserver")
+        }
     }
 
-    if err := http.ListenAndServe(*listen, r); err != nil {
-        log.WithError(err).Fatal("Something went wrong with the webserver")
-    }
+    // log.Info("Demo Websocket/Xterm terminal")
+    // log.Warn("Warning, this is a completely insecure daemon that permits anyone to connect and control your computer, please don't run this anywhere")
+
+    // if !(strings.HasPrefix(*listen, "127.0.0.1") || strings.HasPrefix(*listen, "localhost")) {
+    //     log.Warn("Danger Will Robinson - This program has no security built in and should not be exposed beyond localhost, you've been warned")
+    // }
 }

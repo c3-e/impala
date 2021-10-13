@@ -42,6 +42,8 @@ spec:
               value: '{{ .Values.impalaShell.clientSecret }}'
             - name: AUTH_CALLBACK
               value: '{{ .Values.impalaShell.authCallback }}'
+            - name: LO_REDIRECT_URL
+              value: '{{ .Values.impalaShell.loRedirectUrl }}'
           command: 
           - /opt/impala/bin/wrapper.sh
           # - sleep

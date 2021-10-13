@@ -11,12 +11,13 @@ impalad:
   image: apache/impala:81d5377c2-impalad_coord_exec
   javaToolOptions: '"-Xmx4g"'
 impalaShell:
-  image: c3ai/c3-impala-shell:1.46
+  image: c3ai/c3-impala-shell:1.51
   serviceType: ClusterIP
   issuer: https://c3ops.okta.com/oauth2/default
   clientId: <openid client id>
   clientSecret: <openid client secret>
   authCallback: http://localhost:8080/authorization-code/callback
+  loRedirectUrl:
 catalogd:
   image: apache/impala:81d5377c2-catalogd
 hms:
