@@ -9,6 +9,8 @@ import (
 	"golang.org/x/oauth2"
 )
 
+var ResolveGroup bool
+
 type Authenticator struct {
 	Provider *oidc.Provider
 	Config   oauth2.Config
@@ -24,12 +26,17 @@ func NewAuthenticator() (*Authenticator, error) {
 		return nil, err
 	}
 
+	scopes := []string{oidc.ScopeOpenID, "profile"}
+	if ResolveGroup {
+		scopes = []string{oidc.ScopeOpenID, "profile", "User.Read.All", "Group.Read.All"}
+	}
+
 	conf := oauth2.Config{
 		ClientID:     os.Getenv("CLIENT_ID"),
 		ClientSecret: os.Getenv("CLIENT_SECRET"),
 		RedirectURL:  os.Getenv("AUTH_CALLBACK"),
 		Endpoint:     provider.Endpoint(),
-		Scopes:       []string{oidc.ScopeOpenID, "profile"},
+		Scopes:       scopes,
 	}
 
 	log.Print(conf)

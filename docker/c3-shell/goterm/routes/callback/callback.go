@@ -2,6 +2,8 @@ package callback
 
 import (
 	"context"
+	"encoding/json"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -10,7 +12,10 @@ import (
 
 	"app"
 	"auth"
+	jwt "github.com/dgrijalva/jwt-go"
 )
+
+var ResolveGroup bool
 
 func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	session, err := app.Store.Get(r, "auth-session")
@@ -59,6 +64,35 @@ func CallbackHandler(w http.ResponseWriter, r *http.Request) {
 	if err := idToken.Claims(&profile); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
+	}
+
+	claims := jwt.MapClaims{}
+	_, err = jwt.ParseWithClaims(rawIDToken, claims, nil)
+	if err != nil {
+	//	http.Error(w, err.Error(), http.StatusInternalServerError)
+	//	return
+	}
+
+	groups := claims["groups"]
+	if ResolveGroup && groups != nil {
+		group := groups.([]interface{})[0].(string)
+
+		req, _ := http.NewRequest("GET", "https://graph.microsoft.com/v1.0/groups/{" + group + "}", nil)
+		req.Header.Set("Authorization", "Bearer " + token.AccessToken)
+		client := &http.Client{}
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Println(err)
+		}
+
+		defer resp.Body.Close()
+		body, err := io.ReadAll(resp.Body)
+		var objmap map[string]interface{}
+		if err := json.Unmarshal(body, &objmap); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		log.Println("group: ", objmap["displayName"])
 	}
 
 	session.Values["id_token"] = rawIDToken

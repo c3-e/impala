@@ -13,7 +13,9 @@ import (
     "time"
     "unsafe"
 
+    "auth"
     "app"
+    "callback"
     log "github.com/sirupsen/logrus"
     "login"
     "middlewares"
@@ -37,11 +39,12 @@ var upgrader = websocket.Upgrader{
     WriteBufferSize: 1024,
 }
 
-var auth *string
+var authProvider *string
 var assetsPath *string
 var kubectl *bool
 var authCallback *string
 var useNonce *bool
+var resolveGroup *bool
 
 func handleWebsocket(w http.ResponseWriter, r *http.Request) {
     log.Println("Accepting a ws request...")
@@ -163,7 +166,7 @@ func Wrap(handler http.Handler) http.HandlerFunc {
         w.Header().Set("Expires", time.Unix(0, 0).Format(http.TimeFormat))
         w.Header().Set("Pragma", "no-cache")
 
-        if *auth == "azure" {
+        if *authProvider == "azure" {
             middlewares.IsAuthenticated(w, r, login.LoginHandler)
             handler.ServeHTTP(w, r)
         } else {
@@ -184,20 +187,25 @@ func main() {
     assetsPath = flag.String("assets", "./assets", "Path to assets")
     kubectl = flag.Bool("kubectl", false, "Kubectl exec for local testing")
 
-    auth = flag.String("auth", "azure", "auth provider, azure or okta")
+    authProvider = flag.String("auth", "azure", "auth provider, azure or okta")
     authCallback = flag.String("authcallback", "http://localhost:3000/authorization-code/callback", "Authentication Callback URL")
     useNonce = flag.Bool("nonce", false, "validate nonce")
+    resolveGroup = flag.Bool("resolvegroup", false, "Resolve group name")
 
     flag.Parse()
     fmt.Printf("assets=%s\n", *assetsPath)
     fmt.Printf("kubectl=%t\n", *kubectl)
-    fmt.Printf("auth=%s\n", *auth)
+    fmt.Printf("auth=%s\n", *authProvider)
     fmt.Printf("authCallback=%s\n", *authCallback)
     fmt.Printf("nonce=%t\n", *useNonce)
+    fmt.Printf("resolvegroup=%t\n", *resolveGroup)
 
     mime.AddExtensionType(".css", "text/css; charset=utf-8")
 
-    if *auth == "azure" {
+    if *authProvider == "azure" {
+        auth.ResolveGroup = *resolveGroup
+        callback.ResolveGroup = *resolveGroup
+
         app.Init()
         StartServer()
     } else {

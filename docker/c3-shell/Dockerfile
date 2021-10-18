@@ -9,7 +9,7 @@ RUN pip install azure-storage-blob
 
 # install golang
 # RUN apt -y update && apt -y upgrade && apt -y install golang-go
-RUN VERSION="1.15.8" && ARCH="amd64" && \
+RUN VERSION="1.16.4" && ARCH="amd64" && \
     curl -O -L "https://golang.org/dl/go${VERSION}.linux-${ARCH}.tar.gz" && \
     tar -xf "go${VERSION}.linux-${ARCH}.tar.gz" && \
     mv go /usr/local && \

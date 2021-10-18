@@ -9,6 +9,7 @@ require (
 	github.com/codegangsta/negroni v1.0.0
 	github.com/coreos/go-oidc v2.2.1+incompatible
 	github.com/creack/pty v1.1.10
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/sessions v1.2.1 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
