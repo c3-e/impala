@@ -15,6 +15,22 @@ RUN VERSION="1.16.4" && ARCH="amd64" && \
     mv go /usr/local && \
     rm -f "go${VERSION}.linux-${ARCH}.tar.gz"
 
+# install spark
+RUN apt install -y default-jdk scala git && \
+    curl -O -L "https://downloads.apache.org/spark/spark-3.2.0/spark-3.2.0-bin-hadoop3.2.tgz" && \
+    mkdir /opt/spark && \
+    tar -xf spark*.tgz -C /opt/spark --strip-component 1 && \
+    chmod -R 777 /opt/spark && \
+    echo "export SPARK_HOME=/opt/spark" >> ~/.bashrc && \
+    echo "export PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin" >> ~/.bashrc  && \
+    # echo "export PYSPARK_PYTHON=/usr/bin/python3" >> ~/.bashrc
+    . ~/.bashrc
+
+# install c3telemetry spark
+COPY spark-lib/ /opt/impala/spark/lib
+COPY spark/spark /usr/local/bin
+COPY spark/partition.scala /opt/impala/spark
+
 # install b3
 COPY b3 /usr/local/bin
 COPY impala /usr/local/bin
@@ -34,5 +50,8 @@ RUN cd /opt/impala/bin/goterm && /usr/local/go/bin/go build -o goterm && \
 
 USER impala
 
-RUN echo 'export GOPATH=$HOME/go' > /home/impala/.bashrc && \
-    echo 'export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin' >> /home/impala/.bashrc
+RUN echo "export SPARK_HOME=/opt/spark" > ~/.bashrc && \
+    echo "export PATH=$PATH:/opt/spark/bin:/opt/spark/sbin" >> ~/.bashrc  && \
+    echo 'export GOPATH=$HOME/go' >> /home/impala/.bashrc && \
+    echo 'export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin' >> /home/impala/.bashrc && \
+    . ~/.bashrc

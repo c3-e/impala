@@ -60,6 +60,16 @@ spec:
           volumeMounts:
           - mountPath: /opt/impala/data
             name: data
+          - mountPath: /opt/spark/conf
+            name: spark-config
+            readOnly: true
+      volumes:
+      - name: spark-config
+        configMap:
+          name: spark-config
+          items:
+          - key: "core-site.xml"
+            path: "core-site.xml"
       restartPolicy: Always
   volumeClaimTemplates:
   - apiVersion: v1

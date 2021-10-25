@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spark-config
+data:
+  core-site.xml: |
+    <?xml version="1.0"?>
+    <configuration>
+      <property>
+        <name>fs.azure.account.key</name>
+        <value>{{ .Values.fs.azure.accountKey }}</value>
+      </property>
+      <property>
+        <name>fs.s3a.access.key</name>
+        <value>{{ .Values.fs.s3a.accessKey }}</value>
+      </property>
+      <property>
+        <name>fs.s3a.secret.key</name>
+        <value>{{ .Values.fs.s3a.secretKey }}</value>
+      </property>
+      <property>
+        <name>fs.azure.account.key.{{ .Values.fs.azure.accountName }}.blob.core.windows.net</name>
+        <value>{{ .Values.fs.azure.accountKey }}</value>
+      </property>
+    </configuration>
+  hive-site.xml: |
+    <?xml version="1.0"?>
+    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+    <configuration>
+          <property>
+            <!-- Required for automatic metadata sync. -->
+            <name>hive.metastore.dml.events</name>
+            <value>true</value>
+          </property>
+          <property>
+            <!-- User impala is not authorized to consume notifications by default, disable
+                 authentication to work around this. -->
+             <name>hive.metastore.event.db.notification.api.auth</name>
+            <value>false</value>
+          </property>
+          <property>
+            <name>hive.metastore.uris</name>
+            <value>thrift://quickstart-hive-metastore:9083</value>
+          </property>
+          <!-- Managed and external tablespaces must live on the Docker volumes that we
+               configure for the quickstart cluster. -->
+          <property> 
+            <name>hive.metastore.warehouse.dir</name>
+            <value>/user/hive/warehouse/managed</value>
+          </property>
+          <property>
+            <name>hive.metastore.warehouse.external.dir</name>
+            <value>/user/hive/warehouse/external</value>
+          </property> 
+          <property>
+            <!-- Required to enable Hive transactions -->
+            <name>hive.support.concurrency</name>
+            <value>true</value>
+          </property>
+          <property>
+            <!-- Required to enable Hive transactions -->
+            <name>hive.txn.manager</name>
+            <value>org.apache.hadoop.hive.ql.lockmgr.DbTxnManager</value>
+          </property>
+          <property>
+            <!-- Use embedded Derby database -->
+            <name>javax.jdo.option.ConnectionDriverName</name>
+            <value>org.apache.derby.jdbc.EmbeddedDriver</value>
+          </property>
+          <property>
+            <!-- Use embedded Derby database -->
+            <name>javax.jdo.option.ConnectionURL</name>
+            <value>jdbc:derby:;databaseName=/var/lib/hive/metastore/metastore_db;create=true</value>
+          </property>
+          <!-- Hive stats autogathering negatively affects latency of DDL operations, etc and
+               is not particularly useful for Impala -->
+          <property>
+            <name>hive.stats.autogather</name>
+            <value>false</value>
+          </property>
+    </configuration>
