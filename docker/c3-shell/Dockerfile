@@ -50,8 +50,9 @@ RUN cd /opt/impala/bin/goterm && /usr/local/go/bin/go build -o goterm && \
 
 USER impala
 
-RUN echo "export SPARK_HOME=/opt/spark" > ~/.bashrc && \
-    echo "export PATH=$PATH:/opt/spark/bin:/opt/spark/sbin" >> ~/.bashrc  && \
-    echo 'export GOPATH=$HOME/go' >> /home/impala/.bashrc && \
-    echo 'export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin' >> /home/impala/.bashrc && \
-    . ~/.bashrc
+# a web terminal will use .bash_profile as it's doing bash -l
+RUN echo "export SPARK_HOME=/opt/spark" > ~/.bash_profile && \
+    echo "export PATH=$PATH:/opt/spark/bin:/opt/spark/sbin" >> ~/.bash_profile  && \
+    echo 'export GOPATH=$HOME/go' >> /home/impala/.bash_profile && \
+    echo 'export PATH=$PATH:/usr/local/go/bin:$GOPATH/bin' >> /home/impala/.bash_profile && \
+    . ~/.bash_profile
