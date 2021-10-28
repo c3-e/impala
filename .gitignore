@@ -118,3 +118,4 @@ docker/c3-shell/data
 docker/c3-shell/c3telemetry/dev-asstmaint
 docker/c3-shell/golog/golog
 docker/c3-shell/goterm/goterm
+docker/c3-shell/spark/spark-dev

@@ -19,9 +19,11 @@ spec:
             env:
               - name: AZURE_STORAGE_CONNECTION_STRING
                 value: '{{ .Values.impalaShell.azureStorageConnectionString }}'
+              - name: SHELL_EXEC_MODE
+                value: DAILY
             command: ["/bin/sh", "-c"]
             args:
-            - /opt/impala/c3telemetry/partitions_to_recreate.sh > /tmp/partitions.sql && impala -f /tmp/partitions.sql
+            - spark -I /opt/impala/spark/partition.scala
             resources:
               requests:
                 memory: "4Gi"
@@ -30,9 +32,19 @@ spec:
             volumeMounts:
             - name: c3telemetry-volume
               mountPath: /opt/impala/c3telemetry
+            - name: spark-config
+              mountPath: /opt/spark/conf
+              readOnly: true
           volumes:
           - name: c3telemetry-volume
             configMap:
               name: c3telemetry
               defaultMode: 0777
+          - name: spark-config
+            configMap:
+              name: spark-config
+              items:
+              - key: "core-site.xml"
+                path: "core-site.xml"
+
           restartPolicy: OnFailure
