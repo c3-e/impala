@@ -12,7 +12,7 @@ impalad:
   image: apache/impala:81d5377c2-impalad_coord_exec
   javaToolOptions: '"-Xmx4g"'
 impalaShell:
-  image: c3ai/c3-impala-shell:1.61
+  image: c3ai/c3-impala-shell:1.62
   serviceType: ClusterIP
   issuer: https://c3ops.okta.com/oauth2/default
   clientId: <openid client id>
@@ -25,3 +25,7 @@ hms:
   image: c3ai/c3-impala-hms:1.0
 statestored:
   image: apache/impala:81d5377c2-statestored
+telemetryCron:
+  schedule: "? 2 * * *"
+  dry: "true"
+  wasbPath: wasb://c3telemetry@stageazpaasstore01.blob.core.windows.net/

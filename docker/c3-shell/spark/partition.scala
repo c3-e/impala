@@ -5,8 +5,9 @@ import org.apache.hadoop.fs._
 import org.apache.hadoop.conf.Configuration
 import sys.process._
 
-def path = "wasb://c3telemetry@stageazpaasstore01.blob.core.windows.net/"
-// def path = "wasb://sean-test@stageazpaasstore01.blob.core.windows.net/"
+def path = sys.env.get("WASB_PATH").getOrElse("wasb://c3telemetry@stageazpaasstore01.blob.core.windows.net/")
+// def path = sys.env.get("WASB_PATH").getOrElse("wasb://sean-test@stageazpaasstore01.blob.core.windows.net/")
+
 def fs = FileSystem.get(URI.create(path), new Configuration())
 
 var exitAfter = false
@@ -66,7 +67,7 @@ def copy(include: Set[String] = Set.empty, to: String = "sean-metry")
 
 def process(dryRun: Boolean = true, include: Set[String] = Set.empty)
            (implicit dates: (String, String) = ("yyyy=2020/mm=01/dd=01", "yyyy=2040/mm=12/dd=31")) = {
-  println(s"Processing between ${dates._1} and ${dates._2}...")
+  println(s"Processing ${if(dryRun) "DRY" else "NON-DRY"} on $path between ${dates._1} and ${dates._2}...")
 
   val DROP_PARTITION = "ALTER TABLE c3telemetry.raw DROP IF EXISTS PARTITION"
   val ADD_PARTITION = "ALTER TABLE c3telemetry.raw ADD PARTITION"
@@ -127,6 +128,9 @@ sys.env.get("SHELL_EXEC_MODE") match {
   case Some(v) if v == "DAILY" => 
     println("Running daily incremental partition refresh...")
     exitAfter = true
-    processForDays()
+    processForDays(dryRun = sys.env.get("DRY") match {
+      case Some(v) if v.equalsIgnoreCase("false") => false
+      case _ => true
+    })
   case _ => // nothing
 }
