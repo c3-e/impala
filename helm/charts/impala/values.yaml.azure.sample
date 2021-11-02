@@ -1,0 +1,18 @@
+# Complete accountKey, accessKey, secretKey, azureStorageConnectionString, issuer, clientId and clientSecret
+fs:
+  azure:
+    accountName: stageazpaasstore01
+    accountKey: "FL..."
+  s3a:
+    accessKey: "AK..."
+    secretKey: "vI..."
+impalaShell:
+  azureStorageConnectionString: "DefaultEndpointsProtocol=https;AccountName=stageazpaasstore01;AccountKey=FL...;EndpointSuffix=core.windows.net"
+  issuer: "53..."
+  clientId: "e6..."
+  clientSecret: "Nt..."
+  authCallback: https://ops.c3dev.cloud/callback
+  loRedirectUrl: https://ops.c3dev.cloud
+telemetryCron:
+  schedule: "*/10 * * * *"
+  # schedule: "? 2 * * *"
